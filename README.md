@@ -8,13 +8,6 @@ Paragraph
 
 ###### **Código del programa**
 
-- platformio.ini:
-
-```
-```
-
-- main.cpp:
-
 ```cpp
 #include <SPI.h>
 #include <SD.h>
@@ -74,6 +67,13 @@ Paragraph
 - platformio.ini:
 
 ```
+[env:esp32doit-devkit-v1]
+platform = espressif32
+board = esp32doit-devkit-v1
+framework = arduino
+monitor_speed = 115200
+monitor_port = /dev/ttyUSB0
+lib_deps = miguelbalboa/MFRC522 @ ^1.4.10
 ```
 
 - main.cpp:
@@ -138,7 +138,13 @@ Paragraph
 -platformio.ini :
 
 ```
-
+[env:esp32doit-devkit-v1]
+platform = espressif32
+board = esp32doit-devkit-v1
+framework = arduino
+monitor_speed = 115200
+monitor_port = /dev/ttyUSB0
+lib_deps = miguelbalboa/MFRC522 @ ^1.4.10
 ```
 
 - main.cpp :
@@ -234,7 +240,7 @@ Paragraph
 
 ```
 
-###### **Fichero del SD**
+###### **Fichero de la memoria SD**
 
 ```
 
@@ -255,7 +261,14 @@ Paragraph
 - platformio.ini:
 
 ```
-
+[env:esp32doit-devkit-v1]
+platform = espressif32
+board = esp32doit-devkit-v1
+framework = arduino
+monitor_speed = 115200
+monitor_port = /dev/ttyUSB0
+lib_deps =  miguelbalboa/MFRC522 @ ^1.4.10
+            ottowinter/ESPAsyncWebServer-esphome @ ^3.0.0
 ```
 
 - main.cpp:
@@ -321,7 +334,7 @@ void getNewCards()
                 Serial.print("Card UID:");
                 for (byte i = 0; i < mfrc522.uid.size; i++) 
                 {
-                    message = message + String(mfrc522.uuid.uidByte[i],HEX);
+                    message = message + String(mfrc522.uid.uidByte[i],HEX);
                     Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
                     Serial.print(mfrc522.uid.uidByte[i], HEX);   
                 } 

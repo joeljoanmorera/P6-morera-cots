@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html class="no-js" lang ='es'>
+    <head>
+        <meta charset='utf-8'>
+        <title>Heart Rate & SPO2</title>
+        <link rel='preconnect' href='https://fonts.googleapis.com'>
+        <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>
+        <link href='https://fonts.googleapis.com/css2?family=Poppins:wght@200&display=swap' rel='stylesheet'>
+        <script type="text/javascript">
+            var ws = new WebSocket("ws://" + location.hostname + "/ws");
+
+            ws.onopen = function() {
+                console.log("WebSocket connected");
+            };
+
+            ws.onmessage = function(evt) {
+                var raw = evt.data;
+                const data_array = raw.split(";");
+                document.getElementById("time").innerHTML = data_array[0];
+                document.getElementById("RFID").innerHTML = data_array[1];
+            };
+
+            ws.onerror = function (error) {
+                console.log("WebSocket Error ", error);
+            };
+
+            ws.onclose = function(){
+                console.log("WebSocket connection closed");
+            }
+        </script>
+    </head>
+    <style>
+        html{
+            display: inline-block;
+            margin: 1px auto;
+            text-align: center;
+        }
+        body{
+            background-color: #252525;
+            color: #c1bbbb;
+            font: 200 22px 'Poppins',sans-serif
+        }
+        h1{
+            color: #ffffff;
+            font-size: 36px;
+            text-align: center;
+        }
+        p{
+            text-align: center;
+        }
+        div{
+            background-color: #6a676734;
+            border-radius: 15px;
+            margin: 2% 15% 2% 15%;
+            padding: 0.5%;
+        }
+    </style>
+            
+    <body>
+        <div>
+            <h1>RFID's codes</h1>
+            <p>Time : <div id="time">---</div></p>
+            <p>RFID Code : <div id="RFID">---</div></p>
+        </div>
+    </body>
+</html>
