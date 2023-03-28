@@ -52,10 +52,6 @@ Paragraph
 ```
 ```
 
-###### **Montaje**
-
-![Montaje escaner](/images/escan_mount.png)
-
 ## Ejercicio practico 2 : Lectura de etiqueta RFID
 
 ###### **Funcionamiento**
@@ -79,16 +75,17 @@ lib_deps = miguelbalboa/MFRC522 @ ^1.4.10
 - main.cpp:
 
 ```cpp
+#include <Arduino.h>
 #include <SPI.h>
 #include <MFRC522.h>
 
-#define RST_PIN	9    //Pin 9 para el reset del RC522
-#define SS_PIN	10   //Pin 10 para el SS (SDA) del RC522
+#define RST_PIN	27   //Pin 27 para el reset del RC522
+#define SS_PIN	5   //Pin 5 para el SS (SDA) del RC522
 MFRC522 mfrc522(SS_PIN, RST_PIN); //Creamos el objeto para el RC522
 
 void setup() 
 {
-	Serial.begin(9600); //Iniciamos la comunicación  serial
+	Serial.begin(115200); //Iniciamos la comunicación  serial
 	SPI.begin();        //Iniciamos el Bus SPI
 	mfrc522.PCD_Init(); // Iniciamos  el MFRC522
 	Serial.println("Lectura del UID");
@@ -99,19 +96,19 @@ void loop()
 	// Revisamos si hay nuevas tarjetas  presentes
 	if ( mfrc522.PICC_IsNewCardPresent()) 
     {  
-  		//Seleccionamos una tarjeta
+        //Seleccionamos una tarjeta
         if ( mfrc522.PICC_ReadCardSerial()) 
         {
-                // Enviamos serialemente su UID
-                Serial.print("Card UID:");
-                for (byte i = 0; i < mfrc522.uid.size; i++) 
-                {
-                        Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
-                        Serial.print(mfrc522.uid.uidByte[i], HEX);   
-                } 
-                Serial.println();
-                // Terminamos la lectura de la tarjeta  actual
-                mfrc522.PICC_HaltA();         
+            // Enviamos serialemente su UID
+            Serial.print("Card UID:");
+            for (byte i = 0; i < mfrc522.uid.size; i++) 
+            {
+                    Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+                    Serial.print(mfrc522.uid.uidByte[i], HEX);   
+            } 
+            Serial.println();
+            // Terminamos la lectura de la tarjeta  actual
+            mfrc522.PICC_HaltA();         
         }      
 	}	
 }
@@ -154,8 +151,8 @@ lib_deps = miguelbalboa/MFRC522 @ ^1.4.10
 #include <SD.h>
 #include <MFRC522.h>
 
-#define RST_PIN	9    //Pin 9 para el reset del RC522
-#define SS_PIN	10   //Pin 10 para el SS (SDA) del RC522
+#define RST_PIN	27    //Pin 27 para el reset del RC522
+#define SS_PIN	5   //Pin 5 para el SS (SDA) del RC522
 MFRC522 mfrc522(SS_PIN, RST_PIN); //Creamos el objeto para el RC522
 
 File myFile;
@@ -200,6 +197,7 @@ void writeCodes()
         {
             String ln = act_time + " - " + message ;
             myFile.write(ln);
+            message = "";
         }
     } 
     else 
@@ -216,17 +214,17 @@ void getNewCards()
   		//Seleccionamos una tarjeta
         if ( mfrc522.PICC_ReadCardSerial()) 
         {
-                // Enviamos serialemente su UID
-                Serial.print("Card UID:");
-                for (byte i = 0; i < mfrc522.uid.size; i++) 
-                {
-                    message = message + String(mfrc522.uuid.uidByte[i],HEX);
-                    Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
-                    Serial.print(mfrc522.uid.uidByte[i], HEX);   
-                } 
-                Serial.println();
-                // Terminamos la lectura de la tarjeta  actual
-                mfrc522.PICC_HaltA();         
+            // Enviamos serialemente su UID
+            Serial.print("Card UID:");
+            for (byte i = 0; i < mfrc522.uid.size; i++) 
+            {
+                message = message + String(mfrc522.uuid.uidByte[i],HEX);
+                Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+                Serial.print(mfrc522.uid.uidByte[i], HEX);   
+            } 
+            Serial.println();
+            // Terminamos la lectura de la tarjeta  actual
+            mfrc522.PICC_HaltA();         
         }      
 	}
 }
@@ -248,7 +246,7 @@ Paragraph
 
 ###### **Montaje**
 
-![Montage RFID y SD](./images/rfid_sd.png)
+![Montage RFID y SD](./images/rfid_sd_mount.png)
 
 ### Ejercicio de subida de nota. Parte 2 : Página web donde se pueda consultar la lectura del lector RFID
 
@@ -291,8 +289,8 @@ AsyncWebSocketClient * globalClient = NULL;
  
 String  message;  // Var. Message
 
-#define RST_PIN	9    //Pin 9 para el reset del RC522
-#define SS_PIN	10   //Pin 10 para el SS (SDA) del RC522
+#define RST_PIN	27    //Pin 27 para el reset del RC522
+#define SS_PIN	5   //Pin 5 para el SS (SDA) del RC522
 MFRC522 mfrc522(SS_PIN, RST_PIN); //Creamos el objeto para el RC522
 
 //Function declaration
@@ -319,6 +317,7 @@ void loop()
     if(globalClient != NULL && globalClient->status() == WS_CONNECTED)
     {
         globalClient -> text(message);
+        message = "";
     }
 }
 
@@ -410,7 +409,7 @@ Paragraph
 
 - Página web:
 
-![Página web](./images/web_rfid_p2.png)
+<img src="./images/web_rfid_p2.PNG" alt="Pagina web" width="300"/>
 
 - Código HTML:
 
@@ -432,9 +431,7 @@ Paragraph
 
             ws.onmessage = function(evt) {
                 var raw = evt.data;
-                const data_array = raw.split(";");
-                document.getElementById("time").innerHTML = data_array[0];
-                document.getElementById("RFID").innerHTML = data_array[1];
+                document.getElementById("RFID").innerHTML = raw;
             };
 
             ws.onerror = function (error) {
@@ -476,15 +473,14 @@ Paragraph
     <body>
         <div>
             <h1>RFID's codes</h1>
-            <p>Time : <div id="time">---</div></p>
             <p>RFID Code : <div id="RFID">---</div></p>
         </div>
     </body>
 </html>
 ```
 
-> **Nota:** Se puede ver un video de la actualización de los datos en tiempo real en `images/web_rfid.webm`
+> **Nota:** Se puede ver un video de la actualización de los datos en tiempo real en `images/web_rfid.mov`
 
 ###### **Montaje**
 
-![Montage pagina web](./images/web_rfid_mount.png)
+![Montage pagina web](./images/rfid_mount.png)
