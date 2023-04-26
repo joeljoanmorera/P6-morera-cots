@@ -4,7 +4,7 @@
 
 ###### **Funcionamiento**
 
-Paragraph
+En este ejercicio se hace uso de una memoria SD mediante un bus de comunicación SPI. Para ello, una vez inicializada la memoria SD, definimos un objeto donde se guarda el contenido del fichero que queramos leer y, si efectivamente existe, lo abrimos y lo leemos por el puerto serie. Finalmente, cerramos el fichero.
 
 ###### **Código del programa**
 
@@ -47,16 +47,21 @@ void loop() {}
 
 ###### **Salida del puerto serie**
 
-Paragraph
+```
+Iniciando SD ...inicializacion exitosa
+archivo.txt:
+hola mundo
+```
 
-```
-```
+***
 
 ## Ejercicio practico 2 : Lectura de etiqueta RFID
 
 ###### **Funcionamiento**
 
-Paragraph
+En este ejercicio se hace uso de un lector de etiquetas RFID mediante un bus de comunicación SPI. Para ello, primero creamos el objeto para el lector definiendo el pin para seleccionar el dispositivo y el pin de reset. En la configuración iniciamos tanto el bus SPI como el lector MFRC522.
+
+En el bucle principal, comprovamos en cada iteración si hay nuevas targetas presentes, en caso afirmativo, seleccionamos la targeta, lo sacamos por pantalla y liberamos la lectura de la targeta. 
 
 ###### **Código del programa**
 
@@ -119,8 +124,18 @@ void loop()
 Paragraph
 
 ```
-
+Lectura del UID
+Card UID: 80 D1 66 43
+Card UID: D3 A6 4A 06
+Card UID: 33 01 95 06
+[...]
 ```
+
+###### **Montaje**
+
+![Montage RFID y SD](./images/rfid_mount.png)
+
+***
 
 ## Ejercicios de subida de nota
 
@@ -128,7 +143,10 @@ Paragraph
 
 ###### **Funcionamiento**
 
-Paragraph
+En este ejercicio se hace uso de un lector de etiquetas RFID mediante un bus de comunicación SPI. Para ello, primero creamos el objeto para el lector y otro objeto para el archivo donde escribiermos los codigos RFID que sean leídos. En la configuración iniciamos el bus SPI, el lector MFRC522 y el lector SD.
+
+En el bucle principal, comprovamos en cada iteración si hay nuevas targetas presentes, en caso afirmativo, seleccionamos la targeta, lo sacamos por pantalla y escribimos la lectura en la targeta. Para obtener cada uno de los codigos RFID primero comporvamos que hayan nuevas tarjetas presentes, en caso afirmativo, seleccionamos la tarjeta y la leemos. Una vez leío el codigo, obtenemos un timepo símbolico con la función `act_time()` que acompañara los codigos cuando sean escritos en el fichero.
+
 
 ###### **Código del programa**
 
@@ -156,10 +174,13 @@ lib_deps = miguelbalboa/MFRC522 @ ^1.4.10
 MFRC522 mfrc522(SS_PIN, RST_PIN); //Creamos el objeto para el RC522
 
 File myFile;
+String message;
+int sec, m;
 
 void getNewCards();
 void initSD();
 void writeCodes();
+String act_time();
 
 void setup() 
 {
@@ -167,13 +188,12 @@ void setup()
 	SPI.begin();        //Iniciamos el Bus SPI
 	mfrc522.PCD_Init(); // Iniciamos  el MFRC522
 	Serial.println("Lectura del UID");
-    initSD();
+  initSD();
 }
 
 void loop()
 {
-    getNewCards();
-    writeCodes();
+    if(getNewCards())writeCodes();
 }
 
 void initSD()
@@ -181,78 +201,109 @@ void initSD()
     Serial.print("Iniciando SD ...");
     if (!SD.begin(4))
     {
-        Serial.println("No se pudo inicializar");
-        return;
+      Serial.println("No se pudo inicializar");
+      return;
     }
     Serial.println("Inicializacion exitosa");
     
-    myFile = SD.open("archive.log");//abrimos  el archivo 
+    myFile = SD.open("/archive.log");//abrimos  el archivo 
 }
 
 void writeCodes()
 {
-    if (myFile)
+  if (myFile)
+  {
+    while (myFile.available()) 
     {
-        while (myFile.available()) 
-        {
-            String ln = act_time + " - " + message ;
-            myFile.write(ln);
-            message = "";
-        }
-    } 
-    else 
-    {
-        Serial.println("Error al abrir el archivo");
+      String ln = "Time: " + act_time() + " - Card UID: " + message ;
+      if(myFile.print(ln))Serial.print("Escritura exitosa!");
+      message = "";
     }
+  } 
+  else 
+  {
+      Serial.println("Error al abrir el archivo");
+  }
 }
 
-void getNewCards()
+String act_time()
+{
+  sec+=15;
+  if(sec >= 60)m++;
+  String ret = "19:";
+  if(m < 10)ret = "0" + m;
+  else ret+=m;
+  ret = ret + ":";
+  if(sec < 10)ret = "0" + sec;
+  else ret = ret + sec;
+  return ret;
+}
+
+bool getNewCards()
 {
     // Revisamos si hay nuevas tarjetas  presentes
 	if ( mfrc522.PICC_IsNewCardPresent()) 
-    {  
-  		//Seleccionamos una tarjeta
-        if ( mfrc522.PICC_ReadCardSerial()) 
-        {
-            // Enviamos serialemente su UID
-            Serial.print("Card UID:");
-            for (byte i = 0; i < mfrc522.uid.size; i++) 
-            {
-                message = message + String(mfrc522.uuid.uidByte[i],HEX);
-                Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
-                Serial.print(mfrc522.uid.uidByte[i], HEX);   
-            } 
-            Serial.println();
-            // Terminamos la lectura de la tarjeta  actual
-            mfrc522.PICC_HaltA();         
-        }      
+  {  
+    //Seleccionamos una tarjeta
+    if ( mfrc522.PICC_ReadCardSerial()) 
+    {
+      // Enviamos serialemente su UID
+      Serial.print("Card UID:");
+      for (byte i = 0; i < mfrc522.uid.size; i++) 
+      {
+        message = message + String(mfrc522.uid.uidByte[i],HEX);
+        Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+        Serial.print(mfrc522.uid.uidByte[i], HEX);
+      } 
+      Serial.println();
+      // Terminamos la lectura de la tarjeta  actual
+      mfrc522.PICC_HaltA();         
+      return true;
+    }      
 	}
 }
 ```
 
 ###### **Salida del puerto serie**
 
-Paragraph
-
 ```
-
+Lectura del UID
+Inciando SD ...Inicializacion exitosa
+Card UID: 80 D1 66 43
+Card UID: D3 A6 4A 06
+Card UID: 33 01 95 06
+[...]
 ```
 
 ###### **Fichero de la memoria SD**
 
 ```
-
+Time: 19:00:15 - Card UID: 80D16643
+Time: 19:00:30 - Card UID: D3A64A06
+Time: 19:00:45 - Card UID: 33019506
+Time: 19:01:00 - Card UID: 33019506
+Time: 19:01:15 - Card UID: 33019506
+[...]
 ```
 
 ###### **Montaje**
 
 ![Montage RFID y SD](./images/rfid_sd_mount.png)
 
+***
+
 ### Ejercicio de subida de nota. Parte 2 : Página web donde se pueda consultar la lectura del lector RFID
 
 ###### **Funcionamiento**
 
-Paragraph
+En este ejercicio se describe un programa que mediante el uso de *websockets* se establece una comunicación entre el ESP32 y los posibles clientes. Para ello se hace uso de la libereia `ESPAsyncWebServer.h` que nos permite definir un socket en el puerto 80 y, junto con el codigo en *javascript* de la pagina web, leer los datos enviados y mostrarlos.
+
+El codigo funciona de la siguiente manera:
+
+- Se inicializan el bus de comuniación SPI, el lector de targeta RFID, el servidor, la conexión WiFi y el sistema de ficheros del ESP32, que es donde se guarda el código de la pagina web( que se encuntra en `data/index.html`). Además, se define una función que se encarga de describir, en caso de que suceda un evento, que es lo que se debe hacer. En este caso, se define que cuando se conecte un cliente, se escriba por el puerto serie que se ha conectado un cliente y se asigne a la variable `globalClient` al cliente que se ha conectado. En caso contrario, que el cliente se desconnecte se escibe por pantalla que se ha desconectado y se asigna a la variable `globalClient` el valor *NULL*.
+
+- Se define una función que se encarga de leer las nuevas targetas que se detecten. En caso de nuevas targetas, la función devuelve *True* y se envia un mensaje al cliente.
+
 
 ###### **Código del programa**
 
@@ -313,34 +364,34 @@ void setup()
 
 void loop()
 {
-    getNewCards();
-    if(globalClient != NULL && globalClient->status() == WS_CONNECTED)
+    if(globalClient != NULL && globalClient->status() == WS_CONNECTED && getNewCards())
     {
         globalClient -> text(message);
         message = "";
     }
 }
 
-void getNewCards()
+bool getNewCards()
 {
-    // Revisamos si hay nuevas tarjetas  presentes
+  // Revisamos si hay nuevas tarjetas  presentes
 	if ( mfrc522.PICC_IsNewCardPresent()) 
-    {  
-  		//Seleccionamos una tarjeta
-        if ( mfrc522.PICC_ReadCardSerial()) 
-        {
-                // Enviamos serialemente su UID
-                Serial.print("Card UID:");
-                for (byte i = 0; i < mfrc522.uid.size; i++) 
-                {
-                    message = message + String(mfrc522.uid.uidByte[i],HEX);
-                    Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
-                    Serial.print(mfrc522.uid.uidByte[i], HEX);   
-                } 
-                Serial.println();
-                // Terminamos la lectura de la tarjeta  actual
-                mfrc522.PICC_HaltA();         
-        }      
+  {  
+  	//Seleccionamos una tarjeta
+    if ( mfrc522.PICC_ReadCardSerial()) 
+    {
+      // Enviamos serialemente su UID
+      Serial.print("Card UID:");
+      for (byte i = 0; i < mfrc522.uid.size; i++) 
+      {
+        message = message + String(mfrc522.uid.uidByte[i],HEX);
+        Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+        Serial.print(mfrc522.uid.uidByte[i], HEX);   
+      } 
+      Serial.println();
+      // Terminamos la lectura de la tarjeta  actual
+      mfrc522.PICC_HaltA();
+      return true;         
+    }      
 	}
 }
 //Server functions
@@ -402,6 +453,15 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
 Paragraph
 
 ```
+Lectura del UID
+Connecting to WiFi....
+IP:
+172.20.10.8
+Websocket client connection recived
+Card UID: 80 D1 66 43
+Card UID: D3 A6 4A 06
+Card UID: 33 01 95 06
+[...]
 
 ```
 
