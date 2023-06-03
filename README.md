@@ -131,10 +131,6 @@ Card UID: 33 01 95 06
 [...]
 ```
 
-###### **Montaje**
-
-![Montage RFID y SD](./images/rfid_mount.png)
-
 ***
 
 ## Ejercicios de subida de nota
