@@ -130,6 +130,9 @@ Card UID: D3 A6 4A 06
 Card UID: 33 01 95 06
 [...]
 ```
+###### **Montaje**
+
+![Montage RFID y SD](./images/rfid_mount.png)
 
 ***
 
@@ -281,10 +284,6 @@ Time: 19:01:00 - Card UID: 33019506
 Time: 19:01:15 - Card UID: 33019506
 [...]
 ```
-
-###### **Montaje**
-
-![Montage RFID y SD](./images/rfid_sd_mount.png)
 
 ***
 
