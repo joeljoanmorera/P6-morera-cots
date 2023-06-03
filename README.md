@@ -6,6 +6,15 @@
 
 En este ejercicio se hace uso de una memoria SD mediante un bus de comunicación SPI. Para ello, una vez inicializada la memoria SD, definimos un objeto donde se guarda el contenido del fichero que queramos leer y, si efectivamente existe, lo abrimos y lo leemos por el puerto serie. Finalmente, cerramos el fichero.
 
+###### **Diagrama de estados**
+
+```mermaid
+flowchart LR;
+        IFS[Iniciar SD] --> PIFS[Mostar por el puerto serie resultado de la incializacion]
+        PIFS --> if{Abrir archivo?} --Si--> M[Mostrar contenido del fichero]
+        if --No--> E[Indicar error en lectura]
+```
+
 ###### **Código del programa**
 
 ```cpp
@@ -63,11 +72,28 @@ En este ejercicio se hace uso de un lector de etiquetas RFID mediante un bus de 
 
 En el bucle principal, comprovamos en cada iteración si hay nuevas targetas presentes, en caso afirmativo, seleccionamos la targeta, lo sacamos por pantalla y liberamos la lectura de la targeta. 
 
+###### **Diagrama de estados**
+
+```mermaid
+flowchart LR;
+    
+    ST --> L
+
+  subgraph ST[Setup de los dispositivos con parametros de configuracion]
+    ISPI[Iniciar SPI] --> IM[Iniciar MFRC522]
+  end
+  
+  subgraph L[Programa principal]
+    if{MFRC522 detecto una nueva targeta?} --Si--> SL[Seleccionar la targeta]
+    SL --> P[ Mostrar el UID de la targeta] --> T[Terminar lectura de la targeta]      
+  end 
+```
+
 ###### **Código del programa**
 
 - platformio.ini:
 
-```
+```ini
 [env:esp32doit-devkit-v1]
 platform = espressif32
 board = esp32doit-devkit-v1
@@ -98,12 +124,12 @@ void setup()
 
 void loop()
 {
-	// Revisamos si hay nuevas tarjetas  presentes
-	if ( mfrc522.PICC_IsNewCardPresent()) 
+    // Revisamos si hay nuevas tarjetas  presentes
+    if ( mfrc522.PICC_IsNewCardPresent()) 
     {  
-        //Seleccionamos una tarjeta
-        if ( mfrc522.PICC_ReadCardSerial()) 
-        {
+      	  //Seleccionamos una tarjeta
+      	  if ( mfrc522.PICC_ReadCardSerial()) 
+      	  {
             // Enviamos serialemente su UID
             Serial.print("Card UID:");
             for (byte i = 0; i < mfrc522.uid.size; i++) 
@@ -114,14 +140,12 @@ void loop()
             Serial.println();
             // Terminamos la lectura de la tarjeta  actual
             mfrc522.PICC_HaltA();         
-        }      
-	}	
+	  }      
+    }	
 }
 ```
 
 ###### **Salida del puerto serie**
-
-Paragraph
 
 ```
 Lectura del UID
@@ -146,12 +170,37 @@ En este ejercicio se hace uso de un lector de etiquetas RFID mediante un bus de 
 
 En el bucle principal, comprovamos en cada iteración si hay nuevas targetas presentes, en caso afirmativo, seleccionamos la targeta, lo sacamos por pantalla y escribimos la lectura en la targeta. Para obtener cada uno de los codigos RFID primero comporvamos que hayan nuevas tarjetas presentes, en caso afirmativo, seleccionamos la tarjeta y la leemos. Una vez leío el codigo, obtenemos un timepo símbolico con la función `act_time()` que acompañara los codigos cuando sean escritos en el fichero.
 
+###### **Diagrama de estados**
+
+```mermaid
+flowchart LR;
+    
+    ST --> L
+
+  subgraph ST[Setup de los dispositivos con parametros de configuracion]
+	ISPI[Iniciar SPI] --> IM[Iniciar MFRC522] --> ISD[Iniciar SD]
+  end
+  
+  subgraph L[Programa principal]
+  	subgraph GNC[Leer nuevas targetas]
+    		if{MFRC522 detecto una nueva targeta?} --Si--> SL[Seleccionar la targeta]
+    		SL --> P[ Mostrar el UID de la targeta] --> T[Terminar lectura de la targeta]
+	end
+	
+	GNC --> ifGNC{ Nuevas tagetas para leer?} --Si--> WC[Escribir codigos en SD]
+	
+	subgraph WC[Escribir codigos en SD]
+        	ifWC{Abrir archivo?} --Si--> M[Escribir codigos del fichero]
+      		ifWC --No--> E[Indicar error en lectura]
+	end
+  end 
+```
 
 ###### **Código del programa**
 
 -platformio.ini :
 
-```
+```ini
 [env:esp32doit-devkit-v1]
 platform = espressif32
 board = esp32doit-devkit-v1
@@ -187,7 +236,7 @@ void setup()
 	SPI.begin();        //Iniciamos el Bus SPI
 	mfrc522.PCD_Init(); // Iniciamos  el MFRC522
 	Serial.println("Lectura del UID");
-  initSD();
+  	initSD();
 }
 
 void loop()
@@ -241,25 +290,25 @@ String act_time()
 bool getNewCards()
 {
     // Revisamos si hay nuevas tarjetas  presentes
-	if ( mfrc522.PICC_IsNewCardPresent()) 
-  {  
-    //Seleccionamos una tarjeta
-    if ( mfrc522.PICC_ReadCardSerial()) 
-    {
-      // Enviamos serialemente su UID
-      Serial.print("Card UID:");
-      for (byte i = 0; i < mfrc522.uid.size; i++) 
-      {
-        message = message + String(mfrc522.uid.uidByte[i],HEX);
-        Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
-        Serial.print(mfrc522.uid.uidByte[i], HEX);
-      } 
-      Serial.println();
-      // Terminamos la lectura de la tarjeta  actual
-      mfrc522.PICC_HaltA();         
-      return true;
-    }      
-	}
+    if ( mfrc522.PICC_IsNewCardPresent()) 
+    {  
+	//Seleccionamos una tarjeta
+	if ( mfrc522.PICC_ReadCardSerial()) 
+	{
+	      // Enviamos serialemente su UID
+	      Serial.print("Card UID:");
+	      for (byte i = 0; i < mfrc522.uid.size; i++) 
+	      {
+		message = message + String(mfrc522.uid.uidByte[i],HEX);
+		Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+		Serial.print(mfrc522.uid.uidByte[i], HEX);
+	      } 
+	      Serial.println();
+	      // Terminamos la lectura de la tarjeta  actual
+	      mfrc522.PICC_HaltA();         
+	      return true;
+    	}      
+    }
 }
 ```
 
@@ -299,12 +348,41 @@ El codigo funciona de la siguiente manera:
 
 - Se define una función que se encarga de leer las nuevas targetas que se detecten. En caso de nuevas targetas, la función devuelve *True* y se envia un mensaje al cliente.
 
+###### **Diagrama de estados**
+
+```mermaid
+flowchart LR;
+    
+    ST --> L
+
+  subgraph ST[Setup de los dispositivos con parametros de configuracion]
+	ISPI[Iniciar SPI] --> IM[Iniciar MFRC522] --> ISD[Iniciar File System] --> IW[Iniciar WiFi] 
+	IW --> IS[Iniciar Server] --> IWS[Definir Web Socket]
+  end
+  
+  subgraph L[Programa principal]
+  	subgraph GNC[Leer nuevas targetas]
+    		if{MFRC522 detecto una nueva targeta?} --Si--> SL[Seleccionar la targeta]
+    		SL --> P[ Mostrar el UID de la targeta] --> T[Terminar lectura de la targeta]
+	end
+	
+	GNC --> ifGNC{ Nuevas tagetas para leer y cliente connectado?} --Si--> WC
+	
+	subgraph WC[Enviar mensage a la pagina web]
+        	CSTR[Casting a String con formato para pagina web] -->SGC[Enviar mensaje a pagina web]
+	        SGC --> JS
+	        subgraph JS[App en Javascript]
+		  RM[Recuperar datos] --> A[Assignar datos a los tags de la pagina web]
+	        end
+	end
+  end 
+```
 
 ###### **Código del programa**
 
 - platformio.ini:
 
-```
+```ini
 [env:esp32doit-devkit-v1]
 platform = espressif32
 board = esp32doit-devkit-v1
@@ -352,9 +430,9 @@ void setup()
 	SPI.begin();        //Iniciamos el Bus SPI
 	mfrc522.PCD_Init(); // Iniciamos  el MFRC522
 	Serial.println("Lectura del UID");
-    initSPIFFS();
-    initWiFi();
-    initServer();
+  	initSPIFFS();
+   	initWiFi();
+   	initServer();
 }
 
 void loop()
@@ -387,7 +465,7 @@ bool getNewCards()
       mfrc522.PICC_HaltA();
       return true;         
     }      
-	}
+  }
 }
 //Server functions
 void initSPIFFS()
